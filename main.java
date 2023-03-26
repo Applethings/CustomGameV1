@@ -34,7 +34,6 @@ public class Main extends JavaPlugin implements Listener {
 
     private Stats stats;
     private Map<UUID, ItemStack[]> playerArmor;
-    private Map<UUID, BukkitTask> manaRegenTasks;
 
     @Override
     public void onEnable() {
@@ -42,7 +41,6 @@ public class Main extends JavaPlugin implements Listener {
         getServer().getPluginManager().registerEvents(this, this);
         stats = new Stats(this);
         playerArmor = new HashMap<>();
-        manaRegenTasks = new HashMap<>();
     }
 
     @Override
@@ -53,14 +51,13 @@ public class Main extends JavaPlugin implements Listener {
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
-        Location spawnLocation = new Location(player.getWorld(), 1403, 75, -841);
-        player.teleport(spawnLocation);
         player.setHealth(20);
         player.setWalkSpeed(0.2f);
         player.setFoodLevel(20);
         player.setLevel(0);
         player.setExp(0.0f);
         stats.updateStats(player);
+        stats.startManaRegeneration(player);
         playerArmor.put(player.getUniqueId(), player.getInventory().getArmorContents());
     }
 
