@@ -15,10 +15,15 @@ import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Score;
 import org.bukkit.scoreboard.Scoreboard;
+
+import java.util.HashMap;
+import java.util.UUID;
+
 public class Stats {
 
     private final JavaPlugin plugin;
     private final int defaultMana = 100;
+    private final HashMap<UUID, Mana> playerMana = new HashMap<>();
 
     public Stats(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -73,7 +78,7 @@ public class Stats {
         Score speedScore = objective.getScore(ChatColor.BLUE + "✦ " + ChatColor.AQUA + "Speed: " + speed);
         speedScore.setScore(4);
 
-        Score manaScore = objective.getScore(ChatColor.LIGHT_PURPLE + "❀ " + ChatColor.LIGHT_PURPLE + "Mana: " + new Mana(player.getLevel()) + "/" + maxMana);
+        Score manaScore = objective.getScore(ChatColor.LIGHT_PURPLE + "❀ " + ChatColor.LIGHT_PURPLE + "Mana: " + playerMana.getOrDefault(player.getUniqueId(), new Mana(defaultMana)) + "/" + maxMana);
         manaScore.setScore(3);
 
         Score healthScore = objective.getScore(ChatColor.YELLOW + "❤ " + ChatColor.YELLOW + "Health: " + (int) player.getHealth());
@@ -105,10 +110,10 @@ public class Stats {
 
 
 
-    private static final int MANA_REGEN_TICKS = 20;
-    private static final int MANA_REGEN_AMOUNT = 2;
+    private static final int MANA_REGEN_TICKS = 10;
+    private static final int MANA_REGEN_AMOUNT = 1;
 
-    private void startManaRegeneration(Player player, Mana maxMana) {
+    public void startManaRegeneration(Player player) {
         if (!player.isOnline()) {
             return;
         }
@@ -119,18 +124,16 @@ public class Stats {
                     cancel();
                     return;
                 }
-                Mana currentMana = new Mana(player.getScoreboard().getObjective("§6Stats")
-                        .getScore(ChatColor.LIGHT_PURPLE + "❀ " + ChatColor.LIGHT_PURPLE + "Mana").getScore());
+                Mana maxMana = new Mana(defaultMana + getBonusMana(player));
+                Mana currentMana = playerMana.getOrDefault(player.getUniqueId(), new Mana(defaultMana));
+                if (currentMana.isGreaterThan(maxMana)) {
+                    currentMana = maxMana;
+                }
                 if (currentMana.isLessThan(maxMana)) {
                     currentMana = currentMana.plus(new Mana(MANA_REGEN_AMOUNT));
-                    if (currentMana.isGreaterThan(maxMana)) {
-                        currentMana = maxMana;
-                    }
-                    int manaValue = currentMana.getValue();
-                    player.getScoreboard().getObjective("§6Stats")
-                            .getScore(ChatColor.LIGHT_PURPLE + "❀ " + ChatColor.LIGHT_PURPLE + "Mana").setScore(manaValue);
-                    player.setScoreboard(player.getScoreboard());
                 }
+                playerMana.put(player.getUniqueId(), currentMana);
+                updateScoreboard(player);
             }
         }.runTaskTimer(plugin, MANA_REGEN_TICKS, MANA_REGEN_TICKS);
     }
