@@ -11,6 +11,10 @@ public class Mana {
         return new Mana(this.value + other.value);
     }
 
+    public Mana minus(Mana other) {
+        return new Mana(this.value - other.value);
+    }
+
     public boolean isLessThan(Mana other) {
         return this.value < other.value;
     }
@@ -30,5 +34,17 @@ public class Mana {
 
     public void setValue(int value) {
         this.value = value;
+    }
+
+    public int getCurrentMana() {
+        return this.value;
+    }
+
+    public void setCurrentMana(int value) {
+        this.value = value;
+    }
+
+    public void subtract(int value) {
+        this.value -= value;
     }
 }
