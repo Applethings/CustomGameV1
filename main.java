@@ -2,28 +2,25 @@ package ga.pmc.auskip;
 
 import ga.pmc.auskip.Stats;
 
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.Material;
+import org.bukkit.*;
 import org.bukkit.enchantments.Enchantment;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.LivingEntity;
-import org.bukkit.entity.Player;
-import org.bukkit.entity.WitherSkull;
+import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityRegainHealthEvent;
+import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
+import java.util.List;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
 
 import java.util.HashMap;
@@ -31,7 +28,6 @@ import java.util.Map;
 import java.util.UUID;
 
 public class Main extends JavaPlugin implements Listener {
-
     private Stats stats;
     private Map<UUID, ItemStack[]> playerArmor;
 
@@ -79,8 +75,33 @@ public class Main extends JavaPlugin implements Listener {
             stats.updateStats(player);
             playerArmor.put(player.getUniqueId(), player.getInventory().getArmorContents());
             lastMoveEventTime = currentTime;
+
+            ItemStack boots = player.getInventory().getBoots();
+            if (boots != null && boots.getType() == Material.LEATHER_BOOTS && boots.getEnchantments().containsKey(Enchantment.DIG_SPEED)) {
+                player.addPotionEffect(new PotionEffect(PotionEffectType.JUMP, 20, 0, false, false));
+                player.addPotionEffect(new PotionEffect(PotionEffectType.SLOW_FALLING, 20, 0, false, false));
+
+                new BukkitRunnable() {
+                    @Override
+                    public void run() {
+                        ItemStack newBoots = player.getInventory().getBoots();
+                        if (newBoots == null || newBoots.getType() != Material.LEATHER_BOOTS || !newBoots.getEnchantments().containsKey(Enchantment.DIG_SPEED)) {
+                            player.removePotionEffect(PotionEffectType.JUMP);
+                            player.removePotionEffect(PotionEffectType.SLOW_FALLING);
+                            this.cancel();
+                            return;
+                        }
+                        player.addPotionEffect(new PotionEffect(PotionEffectType.JUMP, 20, 0, false, false));
+                        player.addPotionEffect(new PotionEffect(PotionEffectType.SLOW_FALLING, 20, 0, false, false));
+                    }
+                }.runTaskTimer(this, 20L, 20L);
+            } else {
+                player.removePotionEffect(PotionEffectType.JUMP);
+                player.removePotionEffect(PotionEffectType.SLOW_FALLING);
+            }
         }
     }
+
 
     @EventHandler
     public void onEntityDamage(EntityDamageEvent event) {
@@ -108,56 +129,53 @@ public class Main extends JavaPlugin implements Listener {
         }
     }
     @EventHandler
+    public void onPlayerInteract(PlayerInteractEvent event) {
+        Player player = event.getPlayer();
+        ItemStack itemInHand = player.getInventory().getItemInMainHand();
+
+        if (itemInHand.getType() == Material.STICK && itemInHand.getEnchantmentLevel(Enchantment.MENDING) > 0) {
+            if (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK) {
+                new BukkitRunnable() {
+                    private int traveledDistance = 0;
+                    private final int maxDistance = 25;
+
+                    @Override
+                    public void run() {
+                        Location currentLocation = player.getLocation();
+                        currentLocation.add(currentLocation.getDirection().multiply(traveledDistance));
+
+                        Particle particle = Particle.REDSTONE;
+                        currentLocation.getWorld().spawnParticle(particle, currentLocation, 5, 0, 0, 0, 1, new Particle.DustOptions(Color.RED, 1));
+
+                        List<Entity> nearbyEntities = (List<Entity>) currentLocation.getWorld().getNearbyEntities(currentLocation, 1, 1, 1);
+                        nearbyEntities.remove(player);
+
+                        for (Entity entity : nearbyEntities) {
+                            if (entity instanceof LivingEntity) {
+                                ((LivingEntity) entity).damage(20);
+                                this.cancel();
+                                return;
+                            }
+                        }
+
+                        traveledDistance++;
+
+                        if (traveledDistance >= maxDistance) {
+                            this.cancel();
+                        }
+                    }
+                }.runTaskTimer(this, 0L, 1L);
+            }
+        }
+    }
+
+    @EventHandler
     public void onEntityRegainHealth(EntityRegainHealthEvent event) {
         if (event.getEntity() instanceof Player) {
             Player player = (Player) event.getEntity();
             stats.updateStats(player);
         }
     }
-
-
-    @EventHandler
-    public void onPlayerInteract(PlayerInteractEvent event) {
-        Player player = event.getPlayer();
-        ItemStack item = event.getItem();
-
-        if (item != null && item.getType() == Material.BLAZE_ROD && item.hasItemMeta() && item.getItemMeta().hasEnchant(Enchantment.ARROW_INFINITE)) {
-
-            if (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK) {
-                Location location = player.getLocation();
-                Vector direction = location.getDirection().normalize();
-                WitherSkull skull = location.getWorld().spawn(location.add(direction), WitherSkull.class);
-                skull.setShooter(player);
-                skull.setCharged(true);
-                skull.setGravity(false);
-                skull.setVelocity(direction.multiply(2));
-
-                new BukkitRunnable() {
-                    @Override
-                    public void run() {
-                        Entity target = null;
-                        double distance = 25;
-                        for (Entity entity : skull.getNearbyEntities(distance, distance, distance)) {
-                            if (entity instanceof LivingEntity && !(entity instanceof Player)) {
-                                double entityDistance = entity.getLocation().distanceSquared(skull.getLocation());
-                                if (entityDistance < distance) {
-                                    target = entity;
-                                    distance = entityDistance;
-                                }
-                            }
-                        }
-
-                        if (target != null) {
-                            Vector targetDirection = target.getLocation().subtract(skull.getLocation()).toVector().normalize();
-                            skull.setVelocity(targetDirection.multiply(2));
-                        }
-                    }
-                }.runTaskTimer(this, 0, 1);
-            }
-        }
-    }
-
-
 
 
     public Stats getStats() {
