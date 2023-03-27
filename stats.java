@@ -100,7 +100,7 @@ public class Stats {
             }
         } else if (mainHandItem != null && mainHandItem.getType() == Material.STICK) {
             ItemMeta meta = mainHandItem.getItemMeta();
-            if (meta != null && meta.hasEnchant(Enchantment.SILK_TOUCH)) {
+            if (meta != null && meta.hasEnchant(Enchantment.MENDING)) {
                 bonusMana += 100;
             }
         }
