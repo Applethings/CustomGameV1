@@ -10,7 +10,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityRegainHealthEvent;
-import org.bukkit.event.entity.ProjectileHitEvent;
+
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
@@ -21,7 +21,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.util.Vector;
+
 
 import java.util.HashMap;
 import java.util.Map;
@@ -145,7 +145,7 @@ public class Main extends JavaPlugin implements Listener {
                         currentLocation.add(currentLocation.getDirection().multiply(traveledDistance));
 
                         Particle particle = Particle.REDSTONE;
-                        currentLocation.getWorld().spawnParticle(particle, currentLocation, 5, 0, 0, 0, 1, new Particle.DustOptions(Color.RED, 1));
+                        currentLocation.getWorld().spawnParticle(particle, currentLocation, 10, 0, 0, 0, 1, new Particle.DustOptions(Color.RED, 1));
 
                         List<Entity> nearbyEntities = (List<Entity>) currentLocation.getWorld().getNearbyEntities(currentLocation, 1, 1, 1);
                         nearbyEntities.remove(player);
