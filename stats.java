@@ -52,6 +52,12 @@ public class Stats {
                                 strength += amount;
                             }
                         }
+                        if (meta.getAttributeModifiers(Attribute.GENERIC_MOVEMENT_SPEED) != null) {
+                            for (AttributeModifier modifier : meta.getAttributeModifiers(Attribute.GENERIC_MOVEMENT_SPEED)) {
+                                double amount = modifier.getAmount();
+                                speed += amount;
+                            }
+                        }
                     }
                 }
             }
@@ -62,6 +68,12 @@ public class Stats {
             for (AttributeModifier modifier : mainHand.getItemMeta().getAttributeModifiers(Attribute.GENERIC_ATTACK_DAMAGE)) {
                 double amount = modifier.getAmount();
                 strength += amount;
+            }
+            if (mainHand.getItemMeta().getAttributeModifiers(Attribute.GENERIC_MOVEMENT_SPEED) != null) {
+                for (AttributeModifier modifier : mainHand.getItemMeta().getAttributeModifiers(Attribute.GENERIC_MOVEMENT_SPEED)) {
+                    double amount = modifier.getAmount();
+                    speed += amount;
+                }
             }
         }
 
